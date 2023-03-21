@@ -1,0 +1,9 @@
+name = "Complexvid"
+uuid = "c5d5147d-426c-4678-94d5-1f97614c477a"
+authors = ["gkreder <gkreder@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
