@@ -1,16 +1,9 @@
 module Complexvid
-export HalfEdgeCO, InfectMild
+export HalfEdgeCO, InfectMild, close_to_average
 
-using Catlab.Graphs, Catlab.Graphics
-# using Base.Iterators
-# using CairoMakie, GeometryBasics
-# using CombinatorialSpaces
-# import AlgebraicPetri
-# using CombinatorialSpaces.SimplicialSets: get_edge!
-using Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Present, Catlab.Graphics, Catlab.Theories
-# using Catlab.CategoricalAlgebra.FinCats: FinCatGraphEq
-# import Catlab 
-# pres = Catlab.CategoricalAlgebra.CatElements.presentation; # abbreviate long name
+using Catlab, Catlab.Graphs, Catlab.Graphics
+using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Graphics, Catlab.Theories
+using AlgebraicRewriting
 
 
 
@@ -83,6 +76,10 @@ InfectMild = Rule(homomorphism(InfectMildI, InfectMildL), homomorphism(InfectMil
 # Disease progression (showing symptoms, recovery, diagnosis, isolation)
 # 
 
+average_degree(g::HalfEdgeCO) = sum(degree.(vertices(g)))/nparts(g,:V)
+close_to_average(g::HalfEdgeCO, v::Int) = abs(degree(g,v) - average_degree(g)) <= 1
+# Convert a homomorphism (V -> world state) into a pair, worldstate + vertex id
+close_to_average(f::ACSetTransformation) = close_to_average(codom(f), f[:V](1)) 
 #############################################
 # Analysis
 #############################################
