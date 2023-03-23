@@ -19,26 +19,27 @@ X = @acset HalfEdgeCO begin V=2; S=2; s=[1,2]; group=[:old,:young] end
 
 I = HalfEdgeCO()
 v = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)] end
-r = RuleApp("infectMild", InfectMild, id(v)) # agent map given by A -> I
-view_sched(singleton(r))
-i = if_cond("closeToAverage", close_to_average, v; argtype=:agent) # schedule 
-view_sched(singleton(i))
+r = RuleApp(:infectMild, InfectMild, id(v)) # agent map given by A -> I
+N = Dict([I=>"", v=>"•"]) # acsets to strings dict
+view_sched(singleton(r); names=N)
+i = if_cond(:closeToAverage, close_to_average, v; argtype=:agent) # schedule 
+view_sched(singleton(i); names=N)
 
 
-q = Query("dot", v, I)
-view_sched(singleton(q))
+q = Query(:dot, v, I)
+view_sched(singleton(q), names=N)
 
-sched = mk_sched((init=:I, trace_arg=:V), 1, 
-                 (V=v,I=I, avg=i, quer=q, rw=r, w=Weaken("",create(v))), quote 
+sched = mk_sched((trace_arg=:V,), (init=:I,), 
+                 (V=v,I=I, avg=i, quer=q, rw=r, w=Weaken(create(v))), quote 
   q1,q2,q3 = quer(init,trace_arg,)
   avg1, avg2 = avg(q2)
   inf1, inf2 = rw(avg1)
-  return ([q1,q3,w(inf1)], [inf2, avg2])
+  return ([inf2, avg2], [q1,q3,w(inf1)])
 end)
 
 typecheck(sched)
 
-view_sched(sched)
+view_sched(sched; names=N)
 
 traj = apply_schedule(sched, X; verbose=true)
 
@@ -68,7 +69,7 @@ Increment = Rule(homomorphism(IncrementI, IncrementL),
 
 X = @acset HalfEdgeCO begin V=2; S=1; s=[1]; Im=1; im=2; daysIm=[1]; symptomsIm=[2]; group=[:old,:young]; end
 v = @acset HalfEdgeCO begin V=1; Im=1; Name=1; Num=2; im=1; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] end
-r = RuleApp("increment", Increment, id(v)) # agent map given by A -> I
+r = RuleApp(:increment, Increment, id(v)) # agent map given by A -> I
 view_sched(singleton(r))
 
 traj = apply_schedule(singleton(r), homomorphism(v, X); verbose=true)
@@ -108,7 +109,7 @@ symptoms = Rule(homomorphism(symptomsI, symptomsL; monic=true),
 
 A = @acset HalfEdgeCO begin V=1; Im=1; Name=1; Num=1; im=1; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[0] end
 
-r = RuleApp("Symptoms", symptoms, homomorphism(A, symptomsI))
+r = RuleApp(:Symptoms, symptoms, homomorphism(A, symptomsI))
 view_sched(singleton(r))
 X = @acset HalfEdgeCO begin 
   V=3; Im=2; im=[1,2]; daysIm=[2, 4]; symptomsIm=[2, 0]; 
@@ -132,19 +133,107 @@ traj.steps[1].world.codom
 
 
                 
+########################################
+# Recovery
+########################################
+RecoverL = @acset HalfEdgeCO begin 
+  V=1; Im=1; im=1; Name=1; Num=2; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] 
+end
+RecoverI = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)] end
+RecoverR = @acset HalfEdgeCO begin V=1; R=1; r=1; Name=1; group=[AttrVar(1)];  end
+# homomorphism(RecoverI, RecoverL)
+# homomorphism(RecoverI, RecoverR)
+
+RecoverMild = Rule(homomorphism(RecoverI, RecoverL), homomorphism(RecoverI, RecoverR))
+
+# A = @acset HalfEdgeCO begin V=1; Im=1; Name=1; Num=2; im=1; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] end
+A = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)]; end
+
+recoverMildApp = tryrule(RuleApp(:RecoverMild, RecoverMild, homomorphism(A, RecoverI)))
+# r = RuleApp(:RecoverMild, RecoverMild, homomorphism(A, RecoverL), ) # explicitly giving transformations A -> L (first) and A -> R?
+# homomorphisms(A, RecoverL)
+# homomorphisms(A, RecoverR)
+# homomorphisms(A, RecoverI)
+# homomorphism(A, I)
+# id(A)
+# N = Dict([I=>"", v=>"•"]) # acsets to strings dict
+
+view_sched(recoverMildApp)
+X = @acset HalfEdgeCO begin 
+  V=2; Im=1; im=[1]; daysIm=[18]; symptomsIm=[0]; 
+  S=1; s=2;
+  E=2; 
+  src=[1,2];tgt=[2,1];inv=[2,1];
+  layer=[:Home,:Home];
+  group=[:Old,:Young];
+end
+traj = apply_schedule(recoverMildApp, homomorphism(A, X); verbose=true)
+traj.initial.codom
+traj.steps[1].world.codom
+
+########################################
+# Flip Coin
+########################################
+
+
+A = @acset HalfEdgeCO begin 
+  V=1; Im=1; im=1; Name=1; Num=2; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] 
+end
+
+X = @acset HalfEdgeCO begin 
+  V=2; Im=1; im=[1]; daysIm=[21]; symptomsIm=[-10]; 
+  S=1; s=2;
+  E=2; 
+  src=[1,2];tgt=[2,1];inv=[2,1];
+  layer=[:Home,:Home];
+  group=[:Old,:Young];
+end
+
+function rf(f::ACSetTransformation) 
+  X = f.codom
+  i = f[:Im](1)
+  s = X[i,:symptomsIm]
+  d = X[i,:daysIm]
+  p = 1 / (20 - (s + d))
+  return([p, 1 - p])
+end
+
+# I = HalfEdgeCO()
+v = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)] end
+N = Dict([HalfEdgeCO()=>"", v=>"•", A=>"Im"])
+recoveryFlip = Conditional(rf, 2, A; name=:recoveryFlip, argtype=:agent)
+view_sched(singleton(recoveryFlip), names=N)
 
 
 
 
 
+average_degree(g::HalfEdgeCO) = sum([degree(g,v) for v in vertices(g)])/nparts(g,:V)
+close_to_average(g::HalfEdgeCO, v::Int) = abs(degree(g,v) - average_degree(g)) <= 1
+# Convert a homomorphism (V -> world state) into a pair, worldstate + vertex id
+close_to_average(f::ACSetTransformation) = close_to_average(codom(f), f[:V](1))
 
 
-InfectMildL = @acset HalfEdgeCO begin V=1; S=1; Name=1; s=1; group=[AttrVar(1)] end
-InfectMildI = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)] end
-InfectMildR = @acset HalfEdgeCO begin V=1; Im=1; Num=1; Name=1; im=1; group=[AttrVar(1)]; daysIm=[0]; symptomsIm=[AttrVar(1)];  end
-InfectMild = Rule(homomorphism(InfectMildI, InfectMildL), 
-                  homomorphism(InfectMildI, InfectMildR); 
-                  expr=(Num=[vs->rand(Int)],))
+function twenty_days_sick(f::ACSetTransformation)
+  X = f.codom
+  i = f[:Im](1)
+  d = X[i,:daysIm]
+  return(d >= 20)
+end
 
+i20 = if_cond(:twentyDaysSick, twenty_days_sick, A; argtype=:agent) # schedule 
+view_sched(singleton(i20), names = N)
 
+AGeneric = @acset HalfEdgeCO begin V=1; Name=1; group=[AttrVar(1)]; end
+AIm = @acset HalfEdgeCO begin 
+  V=1; Im=1; im=1; Name=1; Num=2; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] 
+end
 
+sched = mk_sched((trace_arg=:a,), (init=:I,), 
+                 (a=AIm,I=I,g=AGeneric, recoveryFlip=recoveryFlip, recoverMildApp=recoverMildApp, itw=i20), quote 
+  afterTwenty, beforeTwenty = itw(trace_arg)
+  wonFlip, lostFlip = recoveryFlip(beforeTwenty)
+  recovered1 = recoverMildApp(afterTwenty)
+  recovered2 = recoverMildApp(wonFlip)
+return([lostFlip], [recovered1, recovered2])
+end)
