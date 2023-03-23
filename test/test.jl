@@ -109,8 +109,8 @@ symptoms = Rule(homomorphism(symptomsI, symptomsL; monic=true),
 
 A = @acset HalfEdgeCO begin V=1; Im=1; Name=1; Num=1; im=1; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[0] end
 
-r = RuleApp(:Symptoms, symptoms, homomorphism(A, symptomsI))
-view_sched(singleton(r))
+symptoms_r = RuleApp(:Symptoms, symptoms, homomorphism(A, symptomsI))
+view_sched(singleton(symptoms_r))
 X = @acset HalfEdgeCO begin 
   V=3; Im=2; im=[1,2]; daysIm=[2, 4]; symptomsIm=[2, 0]; 
   S=1; s=3;
@@ -120,7 +120,7 @@ X = @acset HalfEdgeCO begin
   group=[:Old,:Old,:Young];
   # layer=[]
 end
-traj = apply_schedule(singleton(r), homomorphism(A, X); verbose=true)
+traj = apply_schedule(singleton(symptoms_r), homomorphism(A, X); verbose=true)
 traj.initial.codom
 traj.steps[1].world.codom
 
@@ -229,11 +229,16 @@ AIm = @acset HalfEdgeCO begin
   V=1; Im=1; im=1; Name=1; Num=2; group=[AttrVar(1)]; daysIm=[AttrVar(1)]; symptomsIm=[AttrVar(2)] 
 end
 
-sched = mk_sched((trace_arg=:a,), (init=:I,), 
-                 (a=AIm,I=I,g=AGeneric, recoveryFlip=recoveryFlip, recoverMildApp=recoverMildApp, itw=i20), quote 
-  afterTwenty, beforeTwenty = itw(trace_arg)
-  wonFlip, lostFlip = recoveryFlip(beforeTwenty)
-  recovered1 = recoverMildApp(afterTwenty)
-  recovered2 = recoverMildApp(wonFlip)
-return([lostFlip], [recovered1, recovered2])
+q_im = Query(:InfectedPeople, AIm, I, AGeneric) 
+sched_rec = mk_sched((trace_arg=:G,), (init=:I,), 
+                 (A=AIm, I=I, G=AGeneric, recFlip=recoveryFlip, q=q_im,
+                  recoverMildApp=recoverMildApp, itw=i20, f=Fail(I),
+                  w=Weaken(homomorphism(AGeneric,AIm))), quote 
+  final_output, loop_start, ignore = q(init, trace_arg)
+  f(ignore)
+  afterTwenty, beforeTwenty = itw(loop_start) 
+  wonFlip, lostFlip = recFlip(beforeTwenty) 
+  recovered1 = recoverMildApp(w([afterTwenty, wonFlip]))
+  return ([w(lostFlip), recovered1], final_output)
 end)
+view_sched(sched;names=N)
