@@ -64,6 +64,7 @@ InfectMild = Rule(homomorphism(InfectMildI, InfectMildL),
                   homomorphism(InfectMildI, InfectMildR); 
                   expr=(Num=[vs->rand(Int)],))
 
+
 #############################################
 # Schedule
 #############################################
