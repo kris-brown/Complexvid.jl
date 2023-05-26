@@ -22,7 +22,6 @@ this to is chosen via random sampling from lognormal distribution with
 mean=1.621 and sigma=0.418.
 """
 function InfectMild()
-  yG, Av, _... = agent_types()
   InfectMildR = @acset_colim yG begin i::Im; daysIm(i) == 0 end
   Rule(homomorphism(Av, ob_map(yG,:S)), homomorphism(Av, InfectMildR); 
        expr=(Num=[vs->round(Int,rand(LogNormal(1.621, .418)))],))
@@ -32,7 +31,6 @@ end
 # Increment days infect (for mild infected)
 #############################################
 function Increment()
-  yG, _... = agent_types()
   Im = ob_map(yG, :Im)
   Rule(id(Im), id(Im); expr=(Num=[vs->vs[1]+1, vs->vs[2]-1],))
 end
@@ -46,7 +44,6 @@ end
 A remove a non-home connection from an infected person displaying symptoms.
 """
 function Symptoms()
-  yG, _... = agent_types()
 
   symptomsL = @acset_colim yG begin
     e::E; i::Im; im(i) == src(e); symptomsIm(i)==0
@@ -70,7 +67,6 @@ end
 # Recovery (of a mild infected)
 ########################################
 function RecoverMild()
-  yG, Av, _... = agent_types()
   Rule(homomorphism(Av, ob_map(yG, :Im)), homomorphism(Av, ob_map(yG,:R)))
 end
 

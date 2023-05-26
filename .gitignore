@@ -2,3 +2,7 @@
 Manifest.toml
 
 cache/
+
+.DS_Store
+
+traj/
