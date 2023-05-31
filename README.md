@@ -21,7 +21,7 @@ showing symptoms. The edges of this graph are labeled with the kind of
 connection: home, work transport, school, religion, random.
 
 The initial contact graph is created by partitioning all people into fully-connected
-subgraphs for each connection type (except for random, )
+subgraphs for each connection type (except for random connections).
 
 The simulation begins with a single mildly infected person.
 
@@ -30,4 +30,4 @@ The simulation begins with a single mildly infected person.
 Each contact edge has an associated probability of infection (edge 'weight') 
 which can be calculated from its context. 
 
-### 
+(To do: finish explanation of model)

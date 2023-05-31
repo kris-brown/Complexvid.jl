@@ -1,5 +1,5 @@
 module Rules 
-export InfectMild, Increment, Symptoms, RecoverMild
+export InfectMild, Increment, Isolate, Recover
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs
 using AlgebraicRewriting
@@ -28,11 +28,13 @@ function InfectMild()
 end
 
 
+
+
 # Increment days infect (for mild infected)
 #############################################
-function Increment()
-  Im = ob_map(yG, :Im)
-  Rule(id(Im), id(Im); expr=(Num=[vs->vs[1]+1, vs->vs[2]-1],))
+function Increment(inf_type::Symbol)
+  Im = Name["I$inf_type"]
+  Rule(id(Im), id(Im); expr=(Num=[vs->vs[1]+1, vs->vs[2]],))
 end
 
 
@@ -43,8 +45,7 @@ end
 """
 A remove a non-home connection from an infected person displaying symptoms.
 """
-function Symptoms()
-
+function Isolate()
   symptomsL = @acset_colim yG begin
     e::E; i::Im; im(i) == src(e); symptomsIm(i)==0
   end
@@ -66,8 +67,8 @@ end
 
 # Recovery (of a mild infected)
 ########################################
-function RecoverMild()
-  Rule(homomorphism(Av, ob_map(yG, :Im)), homomorphism(Av, ob_map(yG,:R)))
+function Recover(itype::Symbol)
+  Rule(homomorphism(Av, Name["I$itype"]), homomorphism(Av, Name["R"]))
 end
 
 end # module

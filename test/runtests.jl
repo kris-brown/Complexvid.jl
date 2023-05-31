@@ -11,3 +11,7 @@ end
 @testset "Schedule" begin
   include("Schedule.jl")
 end
+
+@testset "Run" begin
+  include("Run.jl")
+end

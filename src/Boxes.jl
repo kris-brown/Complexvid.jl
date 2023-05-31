@@ -1,7 +1,8 @@
 module Boxes
 
-export if_close_avg, initial_infect_r, query_vertices, increment_r, checkI0, 
-       q_im, symptoms_r, twenty_days_sick, i20, recoveryFlip, recoverMildApp
+export if_close_avg, infectmild, query_vertices, increment, 
+       isolate, n_days_sick, recoveryFlip, recover, shows_symptoms, 
+       is_symptom_day, eweight
 
 using ..Basic, ..Rules
 using Catlab.CategoricalAlgebra, Catlab.Graphs
@@ -18,9 +19,9 @@ function if_close_avg()
   if_cond(:closeToAverage, close_to_average, Av; argtype=:agent)
 end 
 
-function initial_infect_r() 
-  RuleApp(:infectMild, InfectMild(), id(Av)) # agent map given by A -> I
-end 
+infectmild() =
+  succeed(RuleApp(:infectMild, InfectMild(), id(Av)))
+
 
 function query_vertices()
   Query(:dot, Av, I)
@@ -29,45 +30,54 @@ end
 # Increment days infect (for mild infected)
 #############################################
 
-function increment_r()
-  tryrule(RuleApp(:increment, Increment(), id(AIm)))
+function increment(s::Symbol)
+  succeed(RuleApp(Symbol("increment_$s"), Increment(s), id(Name["I$s"])))
 end
 
 # Check if symptom day (mild infected)
 #############################################
-function is_symptom_day(f::ACSetTransformation)
-  X = f.codom
-  i = f[:Im](1)
-  d = X[i,:daysIm]
-  return(d == 0)
+function is_symptom_day_fun(itype::Symbol)
+  function fun(f::ACSetTransformation)
+    X = f.codom
+    i = f[Symbol("I$itype")](1)
+    return X[i,Symbol("daysI$itype")] == X[i,Symbol("symptomsI$itype")]
+  end
 end
 
-function checkI0()
-  if_cond(:symptomDay, is_symptom_day, AIm; argtype=:agent)
+is_symptom_day(m::Symbol) = 
+  if_cond(:is_symptom_day, is_symptom_day_fun(m), Name["I$m"]; argtype=:agent)
+
+function shows_symptoms_fun(itype::Symbol)
+  function fun(f::ACSetTransformation)
+    X = f.codom
+    i = f[Symbol("I$itype")](1)
+    return X[i,Symbol("daysI$itype")] > X[i,Symbol("symptomsI$itype")]
+  end
 end
-function q_im()
-  Query(:InfectedPeople, AIm, I, Av) 
-end
+
+shows_symptoms(m::Symbol) = if_cond(:show_symptoms, shows_symptoms_fun(m), Name["I$m"])
 
 # Symptoms 
-function symptoms_r() 
-  sym = Symptoms()
-  I = dom(left(sym))
-  tryrule(RuleApp(:Symptoms, sym, homomorphism(AIm, I)))
+function isolate() 
+  rule = Isolate()
+  I = dom(left(rule))
+  loop_rule(RuleApp(:Isolate, Isolate(), homomorphism(Name["Im"], I)))
 end 
 
-# Check if 20 days infected (mild infected)
+
+# Check if n days infected 
 ########################################
-function twenty_days_sick(f::ACSetTransformation)
-  X = f.codom
-  i = f[:Im](1)
-  d = X[i,:daysIm]
-  return(d >= 20)
+function days_sick(n::Int)
+  function fun(f::ACSetTransformation)
+    X = f.codom
+    i = f[:Im](1)
+    d = X[i,:daysIm]
+    return(d >= n)
+  end
 end
 
-function i20() 
-  if_cond(:twentyDaysSick, twenty_days_sick, AIm; argtype=:agent) # schedule 
-end 
+n_days_sick(it::Symbol, n::Int) =
+  if_cond(Symbol(">$n days sick"), days_sick(n), Name["I$it"]; argtype=:agent)
 
 # Recovery 
 ##########
@@ -75,18 +85,19 @@ function rf(f::ACSetTransformation)
   X = f.codom
   i = f[:Im](1)
   s = X[i,:symptomsIm]
-  d = X[i,:daysIm]
-  p = 1 / (20 - (s + d))
-  return([p, 1 - p])
+  s < 20 || error("Bad s$s (Im#$i) $X")
+  p = 1 / (20 - s)
+  println("RETURNING  [p, 1 - p] $( [p, 1 - p])")
+  error("HERE $p")
+  return [p, 1 - p]
 end
 
-function recoveryFlip()
+recoveryFlip() = 
   Conditional(rf, 2, AIm; name=:recoveryFlip, argtype=:agent)
-end 
 
-function recoverMildApp()
-  rm = RecoverMild()
-  tryrule(RuleApp(:RecoverMild, rm, homomorphism(Av, dom(left(rm)))))
+function recover(itype::Symbol)
+  RuleApp(Symbol("Recover_$itype"), Recover(itype), 
+          id(Name["I$itype"]), id(Name["R"])) |> succeed
 end 
 
 # Edge weight
@@ -97,15 +108,21 @@ const β = 0.3 # TODO formally expose this as a parameter
 """
 Given a distinguished edge, compute weight via formula 2 from Complexvid paper
 """ 
-function weight(f::ACSetTransformation)
+function eweight(f::ACSetTransformation)
   X = codom(f)
-  e = only(collect(f[:E]))
+  e = f[:E](1)
   layer = X[e,:layer]
   t = tdict[layer]
-  nᵢⱼ = length(filter(e′->X[e′,:layer]==layer, incident(X,e,:src)))
+  nᵢⱼ = length(filter(e′->X[e′,:layer]==layer, incident(X,X[e,:src],:src)))
   k = get(kdict, layer, nᵢⱼ)
-  return t/168 * k/n * β
+  p = round(t/168 * k/nᵢⱼ * β, digits=2)
+  println("layer $layer t $t k $k nᵢⱼ $nᵢⱼ β $β")
+  return [p, 1-p]
 end 
+
+eweight() = 
+  Conditional(eweight, 2, Name["m-s"]; name=:weight, argtype=:agent)
+
 
 
 end # module 
