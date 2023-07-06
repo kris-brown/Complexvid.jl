@@ -87,8 +87,6 @@ function rf(f::ACSetTransformation)
   s = X[i,:symptomsIm]
   s < 20 || error("Bad s$s (Im#$i) $X")
   p = 1 / (20 - s)
-  println("RETURNING  [p, 1 - p] $( [p, 1 - p])")
-  error("HERE $p")
   return [p, 1 - p]
 end
 
@@ -116,7 +114,6 @@ function eweight(f::ACSetTransformation)
   nᵢⱼ = length(filter(e′->X[e′,:layer]==layer, incident(X,X[e,:src],:src)))
   k = get(kdict, layer, nᵢⱼ)
   p = round(t/168 * k/nᵢⱼ * β, digits=2)
-  println("layer $layer t $t k $k nᵢⱼ $nᵢⱼ β $β")
   return [p, 1-p]
 end 
 

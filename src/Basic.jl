@@ -1,7 +1,7 @@
 module Basic
 export SIRD, yG, Av, AIa, AIm, AIm0, I, Name, traj_view
 
-using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Theories, Catlab.Graphics
+using Catlab.CategoricalAlgebra, Catlab.Theories, Catlab.Graphics
 using Catlab.Graphs, Catlab.Programs
 using AlgebraicRewriting: yoneda_cache, view_traj, Names
 import Catlab.Graphics: to_graphviz
@@ -59,12 +59,12 @@ Attributes:
 end
 
 
-@acset_type AbstractSIRD(SchSIRD) <: AbstractGraph
+@acset_type AbstractSIRD(SchSIRD) <: AbstractSymmetricGraph
 const SIRD = AbstractSIRD{Symbol,Int}
 
 # Agent Types
 #############
-yG = yoneda_cache(SIRD, SchSIRD); # compute representables
+yG = yoneda_cache(SIRD, SchSIRD; clear=false); # compute representables
 Av = ob_map(yG,:V)
 AIm = ob_map(yG,:Im)
 AIa = ob_map(yG,:Ia)
@@ -100,7 +100,7 @@ function get_label(X::SIRD, v::Int)
   end
   return join(reverse(vs)," ")
 end 
-function view_SIRD(f::ACSetTransformation)
+function view_SIRD(f::ACSetTransformation, pth=tempfile())
   X = codom(f)
   pg = PropertyGraph{Any}(; prog = "dot", graph = Dict(),
     node = Dict(:shape => "ellipse", :style=>"filled", :margin => "0"), 
@@ -127,7 +127,11 @@ function view_SIRD(f::ACSetTransformation)
       end
     end
   end
-  to_graphviz(pg)
+  gv = to_graphviz(pg)
+  open(pth, "w") do io 
+    show(io,"image/svg+xml",gv) 
+  end
+  gv
 end
 traj_view(sched,traj) = view_traj(sched,traj,view_SIRD; agent=true)
 

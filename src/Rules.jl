@@ -24,9 +24,9 @@ mean=1.621 and sigma=0.418.
 function InfectMild()
   InfectMildR = @acset_colim yG begin i::Im; daysIm(i) == 0 end
   Rule(homomorphism(Av, ob_map(yG,:S)), homomorphism(Av, InfectMildR); 
-       expr=(Num=[vs->round(Int,rand(LogNormal(1.621, .418)))],))
+       expr=(Num=[vs->rand_days_Im()],))
 end
-
+rand_days_Im() = round(Int,rand(LogNormal(1.621, .418)))
 
 
 
@@ -47,13 +47,10 @@ A remove a non-home connection from an infected person displaying symptoms.
 """
 function Isolate()
   symptomsL = @acset_colim yG begin
-    e::E; i::Im; im(i) == src(e); symptomsIm(i)==0
+    e::E; i::Im; im(i) == src(e);
   end
   symptomsI = @acset_colim yG begin
-    (v1,v2)::V; i::Im; im(i) == v1; symptomsIm(i)==0
-  end
-  symptomsN = @acset_colim yG begin
-    (v1,v2)::V; i::Im; im(i) == v1; symptomsIm(i)==0
+    (v1,v2)::V; i::Im; im(i) == v1;
   end
   symptomsN = @acset_colim yG begin 
     e::E; i::Im 

@@ -6,6 +6,9 @@ using Complexvid.Schedule: initial_infection_sched, increment,
 
 using Catlab.CategoricalAlgebra, Catlab.Programs, Catlab.Graphics
 using AlgebraicRewriting, Luxor
+using Random
+
+Random.seed!(1)
 
 # Initial infection
 
@@ -14,13 +17,6 @@ view_sched(sched; names=Name)
 
 X = @acset SIRD begin V=2; S=2; s=[1,2]; group=[:old,:young]; age=[5,6] end
 traj, = apply_schedule(sched, X);
-traj_res(traj).steps[end].world |> codom
-
-# Incrementing days infected
-X = @acset SIRD begin V=2; S=1; s=[1]; Im=1; im=2;
-  daysIm=[1]; symptomsIm=[2]; group=[:old,:young]; age=[10,11]
-end
-traj, = apply_schedule(increment_r(), homomorphism(AIm, X);)
 traj_res(traj).steps[end].world |> codom
 
 # Appearance of symptoms

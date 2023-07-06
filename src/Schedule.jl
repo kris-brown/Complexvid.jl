@@ -2,7 +2,7 @@ module Schedule
 export overall 
 
 using ..Basic, ..Rules, ..Boxes
-using Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab
 using AlgebraicRewriting
 
 
