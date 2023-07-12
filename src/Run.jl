@@ -85,7 +85,7 @@ function initialize(n::Int=10, ages=[.18,.06,.11,.23,.26,.16])
     n_job = min(length(in_work), rand(5:30))
     job = first(in_work,n_job)
     in_work = in_work[n_job+1:end]
-    fully_connect!(X, job, :School)
+    fully_connect!(X, job, :Work)
   end
 
   # Infect random person
