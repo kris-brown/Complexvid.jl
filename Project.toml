@@ -4,6 +4,7 @@ authors = ["gkreder <gkreder@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
 AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -13,5 +14,5 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
-Catlab = "^0.15"
 AlgebraicRewriting = "^0.2"
+Catlab = "^0.15"
